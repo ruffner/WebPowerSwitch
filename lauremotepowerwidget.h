@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QDialog>
+#include <QComboBox>
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QPushButton>
@@ -23,13 +24,14 @@ class LAURemotePowerWidget : public QWidget
     Q_OBJECT
 
 public:
-    LAURemotePowerWidget(QWidget *parent = 0);
+    LAURemotePowerWidget(int N = 8, QWidget *parent = 0);
     ~LAURemotePowerWidget();
 
-protected:
-    void showEvent(QShowEvent *)
+    QStringList networkPorts();
+
+    bool isConnected()
     {
-        this->setFixedSize(this->size());
+        return(connected);
     }
 
 public slots:
@@ -41,11 +43,13 @@ signals:
 
 private:
     void testConnection();
-    void getOutletStates();
     void makeAuthorizedRequest(QString url);
 
+    QComboBox *portComboBox;
+    QGroupBox *ipAddressGroupBox;
     QGroupBox *buttonGroupBox;
     QLineEdit *ipAddressLineEdit;
+    QPushButton *connectButton;
     QList<QRadioButton *> buttons;
     QNetworkAccessManager *manager;
     QNetworkRequest request;
@@ -67,21 +71,22 @@ public:
     explicit LAURemotePowerDialog(QWidget *parent = nullptr) : QDialog(parent)
     {
         widget = new LAURemotePowerWidget();
+        connect(widget, SIGNAL(emitConnected(bool)), this, SLOT(onConnected(bool)));
 
         QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
         connect(buttonBox->button(QDialogButtonBox::Ok), SIGNAL(clicked()), this, SLOT(accept()));
         connect(buttonBox->button(QDialogButtonBox::Cancel), SIGNAL(clicked()), this, SLOT(reject()));
 
-        QPushButton *button = new QPushButton("Connect");
-        connect(button, SIGNAL(clicked()), widget, SLOT(onConnect()));
-        buttonBox->addButton(button, QDialogButtonBox::ActionRole);
-
-        connect(widget, SIGNAL(emitConnected(bool)), buttonBox, SLOT(setDisabled(bool)));
-
         this->setLayout(new QVBoxLayout());
         this->layout()->setContentsMargins(6, 6, 6, 6);
         this->layout()->addWidget(widget);
         this->layout()->addWidget(buttonBox);
+    }
+
+protected:
+    void showEvent(QShowEvent *)
+    {
+        this->setFixedSize(this->size());
     }
 
 private:
